@@ -30,6 +30,7 @@ contract('Flight Surety Tests', async (accounts) => {
     finally {
         assert.equal(throwExp, false, "Authorization should be successful");
     }
+    await config.flightSuretyData.authorizeCaller(config.flightSuretyApp.address);
   });
 
   it('(Data contract security) Should prevent access to non authorized callers on business public functions', async () => {
@@ -60,24 +61,22 @@ contract('Flight Surety Tests', async (accounts) => {
     }
 
     throwExp = false; 
-    let isOperational;
     try {
         await config.flightSuretyApp.setDataContract(config.flightSuretyData.address);
-        isOperational = await config.flightSuretyApp.isOperational.call();
+        await config.flightSuretyApp.isOperational.call();
     }
     catch (e) {
         throwExp = true;
     }
     finally {
         assert.equal(throwExp, false, "should authorize access to methods that depends on data contract if set");
-        assert.equal(isOperational, true, "should be operationnal");
     } 
   });
 
   it(`(multiparty) has correct initial isOperational() value`, async function () {
 
     // Get operating status
-    let status = await config.flightSuretyData.isOperational.call();
+    let status = await config.flightSuretyApp.isOperational.call();
     assert.equal(status, true, "Incorrect initial operating status value");
 
   });
@@ -119,7 +118,7 @@ contract('Flight Surety Tests', async (accounts) => {
       let reverted = false;
       try 
       {
-          await config.flightSurety.setTestingMode(true);
+          await config.flightSuretyApp.setTestingMode(true);
       }
       catch(e) {
           reverted = true;
@@ -131,6 +130,18 @@ contract('Flight Surety Tests', async (accounts) => {
 
   });
 
+  it('(airline) a airline is registered at deployed time', async () => {
+    let numAirlines = await config.flightSuretyData.getAirlineCount.call();
+    assert.equal(numAirlines, 1, "Airline is not registered at deployed time");
+  });
+
+  it('(airline) only registered airlines can register new airlines until 4', async() => {
+    await config.flightSuretyApp.registerAirline(accounts[2], 'Airline 2', {from: config.firstAirline});
+
+    let numAirlines = await config.flightSuretyData.getAirlineCount.call();
+    assert.equal(numAirlines, 2, "2nd airline is not registered");
+  });
+ 
   it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
     
     // ARRANGE

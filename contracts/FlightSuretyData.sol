@@ -13,6 +13,12 @@ contract FlightSuretyData {
     bool private operational = true;                                    // Blocks all state changes throughout the contract if false
     address private authorizedCaller;
 
+    struct Airline {
+        string name;
+    }
+    mapping(address => Airline) private airlines;
+    uint256 private numAirlines = 0;
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -22,12 +28,10 @@ contract FlightSuretyData {
     * @dev Constructor
     *      The deploying account becomes contractOwner
     */
-    constructor
-                                (
-                                ) 
-                                public 
+    constructor(address airlineAddress, string memory airlineName) public 
     {
         contractOwner = msg.sender;
+        registerAirline(airlineAddress, airlineName);
     }
 
     /********************************************************************************************/
@@ -113,20 +117,27 @@ contract FlightSuretyData {
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
+    function isAirlineRegistered(address airlineAddress) external view returns(bool) {
+        return bytes(airlines[airlineAddress].name).length > 0;
+    }
+
    /**
     * @dev Add an airline to the registration queue
     *      Can only be called from FlightSuretyApp contract
     *
     */   
-    function registerAirline
-                            (   
-                            )
-                            external
-                            view
-                            requireAuthorizedCaller
+    function registerAirline(address airline, string memory name)
+        public
+        requireAuthorizedOrContractOwner
     {
+        require(bytes(airlines[airline].name).length == 0, "Airline already registered");
+        airlines[airline] = Airline({name: name});
+        numAirlines = numAirlines + 1;
     }
 
+    function getAirlineCount() external view requireAuthorizedOrContractOwner returns(uint256) {
+        return numAirlines;
+    }
 
    /**
     * @dev Buy insurance for a flight
@@ -207,7 +218,5 @@ contract FlightSuretyData {
     {
         fund();
     }
-
-
 }
 

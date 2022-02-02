@@ -28,7 +28,7 @@ contract FlightSuretyApp {
 
     address private contractOwner;          // Account used to deploy contract
 
-    address private dataContract;
+    FlightSuretyData private dataContract;
 
     struct Flight {
         bool isRegistered;
@@ -53,8 +53,7 @@ contract FlightSuretyApp {
     */
     modifier requireIsOperational() 
     {
-         // Modify to call data contract's status
-        require(true, "Contract is currently not operational");  
+        require(isOperational(), "Contract is currently not operational");  
         _;  // All modifiers require an "_" which indicates where the function body will be added
     }
 
@@ -68,7 +67,12 @@ contract FlightSuretyApp {
     }
 
     modifier requireDataContract() {
-        require(dataContract != address(0), "Data contract is not set");
+        require(address(dataContract) != address(0), "Data contract is not set");
+        _;
+    }
+
+    modifier requireAirlineRegistered() {
+        require(dataContract.isAirlineRegistered(msg.sender), "Airline is not registered");
         _;
     }
 
@@ -80,10 +84,7 @@ contract FlightSuretyApp {
     * @dev Contract constructor
     *
     */
-    constructor
-                                (
-                                ) 
-                                public 
+    constructor() public 
     {
         contractOwner = msg.sender;
     }
@@ -98,35 +99,50 @@ contract FlightSuretyApp {
                             view
                             returns(bool)
     {
-        address payable addr = address(uint160(dataContract));
-        return FlightSuretyData(addr).isOperational();  // Modify to call data contract's status
+        return dataContract.isOperational();  // Modify to call data contract's status
     }
 
     function setDataContract(address _dataContractAddress) 
-                            public 
+                            external 
                             requireContractOwner
     {
         require(_dataContractAddress != address(0), "Data contract address cannot be empty");
 
-        dataContract = _dataContractAddress;
+        address payable addr = address(uint160(_dataContractAddress));
+        dataContract = FlightSuretyData(addr);
     }
 
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
+    function setTestingMode(bool _isTesting) 
+                            public 
+                            requireIsOperational 
+                            
+    {
+    }
   
    /**
     * @dev Add an airline to the registration queue
     *
     */   
     function registerAirline
-                            (   
+                            (
+                                address _airline,
+                                string calldata _airlineName 
                             )
                             external
-                            pure
+                            requireDataContract
+                            requireAirlineRegistered
                             returns(bool success, uint256 votes)
     {
+        if (dataContract.getAirlineCount() < 4) {
+            dataContract.registerAirline(_airline, _airlineName);
+            return (true, 0);
+        } else {
+            return (false, 0);
+        }
         return (success, 0);
     }
 
