@@ -6,6 +6,8 @@ pragma solidity ^0.5;
 
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 
+import "./FlightSuretyData.sol";
+
 /************************************************** */
 /* FlightSurety Smart Contract                      */
 /************************************************** */
@@ -25,6 +27,8 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
     address private contractOwner;          // Account used to deploy contract
+
+    address private dataContract;
 
     struct Flight {
         bool isRegistered;
@@ -63,6 +67,11 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireDataContract() {
+        require(dataContract != address(0), "Data contract is not set");
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -85,10 +94,21 @@ contract FlightSuretyApp {
 
     function isOperational() 
                             public 
-                            pure 
-                            returns(bool) 
+                            requireDataContract
+                            view
+                            returns(bool)
     {
-        return true;  // Modify to call data contract's status
+        address payable addr = address(uint160(dataContract));
+        return FlightSuretyData(addr).isOperational();  // Modify to call data contract's status
+    }
+
+    function setDataContract(address _dataContractAddress) 
+                            public 
+                            requireContractOwner
+    {
+        require(_dataContractAddress != address(0), "Data contract address cannot be empty");
+
+        dataContract = _dataContractAddress;
     }
 
     /********************************************************************************************/

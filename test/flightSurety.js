@@ -47,6 +47,33 @@ contract('Flight Surety Tests', async (accounts) => {
     }
   });
 
+  it('(Data contract security) Should prevent access to methods that depends on data contract if not set', async() => {
+    let throwExp = false;
+    try {
+        await config.flightSuretyApp.isOperational.call();
+    }
+    catch (e) {
+        throwExp = true;
+    }
+    finally {
+        assert.equal(throwExp, true, "should prevent access to methods that depends on data contract if not set");
+    }
+
+    throwExp = false; 
+    let isOperational;
+    try {
+        await config.flightSuretyApp.setDataContract(config.flightSuretyData.address);
+        isOperational = await config.flightSuretyApp.isOperational.call();
+    }
+    catch (e) {
+        throwExp = true;
+    }
+    finally {
+        assert.equal(throwExp, false, "should authorize access to methods that depends on data contract if set");
+        assert.equal(isOperational, true, "should be operationnal");
+    } 
+  });
+
   it(`(multiparty) has correct initial isOperational() value`, async function () {
 
     // Get operating status

@@ -53,7 +53,7 @@ contract FlightSuretyData {
     */
     modifier requireContractOwner()
     {
-        require(msg.sender == contractOwner, "Caller is not contract owner");
+        require(tx.origin== contractOwner, "Caller is not contract owner");
         _;
     }
 
@@ -67,7 +67,7 @@ contract FlightSuretyData {
     }
 
     modifier requireAuthorizedOrContractOwner() {
-        require(msg.sender == authorizedCaller || msg.sender == contractOwner, "Caller is not authorized");
+        require(msg.sender == authorizedCaller || tx.origin == contractOwner, "Not authorized");
         _;   
     }
 
