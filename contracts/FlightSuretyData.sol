@@ -11,6 +11,7 @@ contract FlightSuretyData {
 
     address private contractOwner;                                      // Account used to deploy contract
     bool private operational = true;                                    // Blocks all state changes throughout the contract if false
+    address private authorizedCaller;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -56,6 +57,20 @@ contract FlightSuretyData {
         _;
     }
 
+    /**
+    * @dev Modifier that requires the "authorizedCaller" account to be the function caller
+    */
+    modifier requireAuthorizedCaller()
+    {
+        require(msg.sender == authorizedCaller, "Caller is not authorized");
+        _;
+    }
+
+    modifier requireAuthorizedOrContractOwner() {
+        require(msg.sender == authorizedCaller || msg.sender == contractOwner, "Caller is not authorized");
+        _;   
+    }
+
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
@@ -67,7 +82,8 @@ contract FlightSuretyData {
     */      
     function isOperational() 
                             public 
-                            view 
+                            view
+                            requireAuthorizedOrContractOwner
                             returns(bool) 
     {
         return operational;
@@ -89,6 +105,10 @@ contract FlightSuretyData {
         operational = mode;
     }
 
+    function authorizeCaller(address caller) external requireContractOwner {
+        authorizedCaller = caller;
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
@@ -102,7 +122,8 @@ contract FlightSuretyData {
                             (   
                             )
                             external
-                            pure
+                            view
+                            requireAuthorizedCaller
     {
     }
 
@@ -115,6 +136,7 @@ contract FlightSuretyData {
                             (                             
                             )
                             external
+                            requireAuthorizedCaller
                             payable
     {
 
@@ -127,7 +149,8 @@ contract FlightSuretyData {
                                 (
                                 )
                                 external
-                                pure
+                                requireAuthorizedCaller
+                                view 
     {
     }
     
@@ -140,7 +163,8 @@ contract FlightSuretyData {
                             (
                             )
                             external
-                            pure
+                            requireAuthorizedCaller
+                            view
     {
     }
 
@@ -154,6 +178,7 @@ contract FlightSuretyData {
                             )
                             public
                             payable
+                            requireAuthorizedCaller
     {
     }
 
@@ -163,7 +188,8 @@ contract FlightSuretyData {
                             string memory flight,
                             uint256 timestamp
                         )
-                        pure
+                        view 
+                        requireAuthorizedCaller
                         internal
                         returns(bytes32) 
     {
@@ -177,6 +203,7 @@ contract FlightSuretyData {
     function() 
                             external 
                             payable 
+                            requireAuthorizedCaller
     {
         fund();
     }

@@ -14,6 +14,39 @@ contract('Flight Surety Tests', async (accounts) => {
   /* Operations and Settings                                                              */
   /****************************************************************************************/
 
+  it('(Data contract security) Should authorize caller on business public functions', async () => {
+    const callerAddress = accounts[10];
+
+    await config.flightSuretyData.authorizeCaller(callerAddress);
+
+    let throwExp = false;
+    try {
+        await config.flightSuretyData.isOperational.call({from: callerAddress});
+    }
+    catch (e) {
+        throwExp = true;
+        console.error(e);
+    }
+    finally {
+        assert.equal(throwExp, false, "Authorization should be successful");
+    }
+  });
+
+  it('(Data contract security) Should prevent access to non authorized callers on business public functions', async () => {
+    const callerAddress = accounts[11];
+
+    let throwExp = false;
+    try {
+        await config.flightSuretyData.isOperational.call({from: callerAddress});
+    }
+    catch (e) {
+        throwExp = true;
+    }
+    finally {
+        assert.equal(throwExp, true, "Authorization should be denied");
+    }
+  });
+
   it(`(multiparty) has correct initial isOperational() value`, async function () {
 
     // Get operating status
