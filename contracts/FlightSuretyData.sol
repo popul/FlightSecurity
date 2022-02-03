@@ -15,9 +15,12 @@ contract FlightSuretyData {
 
     struct Airline {
         string name;
+        bool funded;
     }
     mapping(address => Airline) private airlines;
     uint256 private numAirlines = 0;
+
+    uint256 numFounded = 0;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -121,6 +124,9 @@ contract FlightSuretyData {
         return bytes(airlines[airlineAddress].name).length > 0;
     }
 
+    function isAirlineFunded(address airlineAddress) external view returns(bool) {
+        return airlines[airlineAddress].funded;
+    }
    /**
     * @dev Add an airline to the registration queue
     *      Can only be called from FlightSuretyApp contract
@@ -131,12 +137,16 @@ contract FlightSuretyData {
         requireAuthorizedOrContractOwner
     {
         require(bytes(airlines[airline].name).length == 0, "Airline already registered");
-        airlines[airline] = Airline({name: name});
-        numAirlines = numAirlines + 1;
+        airlines[airline] = Airline({name: name, funded: false});
+        numAirlines = numAirlines.add(1);
     }
 
     function getAirlineCount() external view requireAuthorizedOrContractOwner returns(uint256) {
         return numAirlines;
+    }
+
+    function getFoundedAirlineCount() external view requireAuthorizedOrContractOwner returns(uint256) {
+        return numFounded;
     }
 
    /**
@@ -179,18 +189,11 @@ contract FlightSuretyData {
     {
     }
 
-   /**
-    * @dev Initial funding for the insurance. Unless there are too many delayed flights
-    *      resulting in insurance payouts, the contract should be self-sustaining
-    *
-    */   
-    function fund
-                            (   
-                            )
-                            public
-                            payable
-                            requireAuthorizedCaller
-    {
+    function setAirlineAsFunded() external requireAuthorizedCaller {
+        require(airlines[tx.origin].funded == false, "Airline already funded");
+        
+        airlines[tx.origin].funded = true;
+        numFounded = numFounded.add(1);
     }
 
     function getFlightKey
@@ -216,7 +219,6 @@ contract FlightSuretyData {
                             payable 
                             requireAuthorizedCaller
     {
-        fund();
     }
 }
 

@@ -76,6 +76,19 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireAirlineFunded() {
+        require(dataContract.isAirlineFunded(msg.sender), "Airline is not funded");
+        _;
+    }
+
+    modifier giveBackChange(uint256 value) {
+        _;
+        uint256 change = msg.value - value;
+        if (change > 0) {
+            msg.sender.transfer(change);
+        }
+    }
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -135,6 +148,7 @@ contract FlightSuretyApp {
                             external
                             requireDataContract
                             requireAirlineRegistered
+                            requireAirlineFunded
                             returns(bool success, uint256 votes)
     {
         if (dataContract.getAirlineCount() < 4) {
@@ -146,6 +160,16 @@ contract FlightSuretyApp {
         return (success, 0);
     }
 
+    function addInitialFunds() payable external requireAirlineRegistered requireDataContract giveBackChange(10 ether)
+    {
+        require(msg.value >= 10 ether, "10 ethers are required");
+        require(!dataContract.isAirlineFunded(msg.sender), "Airline is already funded");
+
+        dataContract.setAirlineAsFunded();
+        
+        address payable addr = address(uint160(address(dataContract)));
+        addr.transfer(10 ether);
+    }
 
    /**
     * @dev Register a future flight for insuring.

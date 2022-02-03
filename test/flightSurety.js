@@ -135,13 +135,6 @@ contract('Flight Surety Tests', async (accounts) => {
     assert.equal(numAirlines, 1, "Airline is not registered at deployed time");
   });
 
-  it('(airline) only registered airlines can register new airlines until 4', async() => {
-    await config.flightSuretyApp.registerAirline(accounts[2], 'Airline 2', {from: config.firstAirline});
-
-    let numAirlines = await config.flightSuretyData.getAirlineCount.call();
-    assert.equal(numAirlines, 2, "2nd airline is not registered");
-  });
- 
   it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
     
     // ARRANGE
@@ -149,17 +142,37 @@ contract('Flight Surety Tests', async (accounts) => {
 
     // ACT
     try {
-        await config.flightSuretyApp.registerAirline(newAirline, {from: config.firstAirline});
+        await config.flightSuretyApp.registerAirline(newAirline, 'Airline 2', {from: config.firstAirline});
     }
     catch(e) {
 
     }
-    let result = await config.flightSuretyData.isAirline.call(newAirline); 
+    let result = await config.flightSuretyData.isAirlineRegistered.call(newAirline); 
 
     // ASSERT
     assert.equal(result, false, "Airline should not be able to register another airline if it hasn't provided funding");
 
   });
- 
 
+  it('(airline) only registered airlines can register new airlines until 4', async() => {
+    await config.flightSuretyApp.addInitialFunds({from: config.firstAirline, value: web3.utils.toWei('10', 'ether')});
+    assert.equal(await config.flightSuretyData.getFoundedAirlineCount.call(), 1, "Initial funded airline count is not 1");
+
+    for(let i = 2 ; i < 5 ; i++) {
+        const newAirline = accounts[i];
+
+        await config.flightSuretyApp.registerAirline(newAirline, `Airline ${i}`, {from: config.firstAirline});
+        const isAirline = await config.flightSuretyData.isAirlineRegistered.call(newAirline)
+        assert.equal(isAirline, true, "Airline is not registered");
+
+        await config.flightSuretyApp.addInitialFunds({from: newAirline, value: web3.utils.toWei('10', 'ether')});
+        assert.equal(await config.flightSuretyData.isAirlineFunded.call(newAirline), true, `Airline must be funded`);
+        assert.equal(await config.flightSuretyData.getFoundedAirlineCount.call(), i, "Wrong airline founded count");
+    }
+
+    const fitfhAirline = accounts[5];
+    await config.flightSuretyApp.registerAirline(fitfhAirline, `Airline 5`, {from: config.firstAirline});
+    const isAirline = await config.flightSuretyData.isAirlineRegistered.call(fitfhAirline)
+    assert.equal(isAirline, false, "fifth airline can't beregistered without multiparty consensus");
+  }); 
 });
