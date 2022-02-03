@@ -30,14 +30,6 @@ contract FlightSuretyApp {
 
     FlightSuretyData private dataContract;
 
-    struct Flight {
-        bool isRegistered;
-        uint8 statusCode;
-        uint256 updatedTimestamp;
-        address airline;
-    }
-    mapping(bytes32 => Flight) private flights;
-
     struct Votes {
         uint8 numVotes;
         mapping(address => bool) voters;
@@ -96,7 +88,7 @@ contract FlightSuretyApp {
 
     modifier giveBackChange(uint256 value) {
         _;
-        uint256 change = msg.value - value;
+        uint256 change = msg.value.sub(value);
         if (change > 0) {
             msg.sender.transfer(change);
         }
@@ -216,7 +208,48 @@ contract FlightSuretyApp {
      * @dev Register a future flight for insuring.
      *
      */
-    function registerFlight() external pure {}
+    function registerFlight(string calldata flightNumber)
+        external
+        requireDataContract
+        requireAirlineFunded
+    {
+        require(
+            dataContract.isFlightRegistered(flightNumber) == false,
+            "Flight is already registered"
+        );
+
+        dataContract.registerFlight(flightNumber);
+    }
+
+    function buyInsurance(string calldata flightNumber)
+        external
+        payable
+        giveBackChange(1 ether)
+    {
+        require(
+            dataContract.isFlightRegistered(flightNumber),
+            "Flight is not registered"
+        );
+
+        require(
+            msg.value > 0,
+            "value can't be null"
+        );
+
+        address payable addr = address(uint160(address(dataContract)));
+        uint256 insuranceCost = msg.value;
+        if (insuranceCost > 1 ether) {
+            insuranceCost = 1 ether;
+        }
+
+        dataContract.creditInsurance(flightNumber, insuranceCost);
+
+        addr.transfer(insuranceCost);
+    }
+
+    function getInsuranceBalance() external {
+
+    }
 
     /**
      * @dev Called after oracle has updated flight status

@@ -22,6 +22,16 @@ contract FlightSuretyData {
 
     uint256 numFounded = 0;
 
+    struct Flight {
+        bool isRegistered;
+        uint8 statusCode;
+        uint256 updatedTimestamp;
+        address airline;
+        string flightNumber;
+        mapping(address => uint256) insureeBalances;
+    }
+    mapping(string => Flight) private flights;
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -162,22 +172,69 @@ contract FlightSuretyData {
         return numFounded;
     }
 
-    /**
-     * @dev Buy insurance for a flight
-     *
-     */
-    function buy() external payable requireAuthorizedCaller {}
+    function isFlightRegistered(string calldata flightNumber)
+        external
+        view
+        requireAuthorizedOrContractOwner
+        returns (bool)
+    {
+        return flights[flightNumber].isRegistered;
+    }
 
-    /**
-     *  @dev Credits payouts to insurees
-     */
-    function creditInsurees() external view requireAuthorizedCaller {}
+    function registerFlight(string calldata flightNumber)
+        external
+        requireAuthorizedOrContractOwner
+    {
+        require(
+            !flights[flightNumber].isRegistered,
+            "Flight already registered"
+        );
+        flights[flightNumber] = Flight({
+            isRegistered: true,
+            statusCode: 0,
+            updatedTimestamp: 0,
+            airline: tx.origin,
+            flightNumber: flightNumber
+        });
+    }
 
-    /**
-     *  @dev Transfers eligible payout funds to insuree
-     *
-     */
-    function pay() external view requireAuthorizedCaller {}
+    function creditInsurance(string calldata flightNumber, uint256 amount)
+        external
+        requireAuthorizedOrContractOwner
+    {
+        require(
+            flights[flightNumber].isRegistered,
+            "Flight not registered"
+        );
+
+        flights[flightNumber].insureeBalances[tx.origin] = amount;
+    }
+
+    function getInsureeBalance(string calldata flightNumber, address insuree)
+        external
+        view
+        requireContractOwner
+        returns (uint256)
+    {
+        return flights[flightNumber].insureeBalances[insuree];
+    }
+
+    // /**
+    //  * @dev Buy insurance for a flight
+    //  *
+    //  */
+    // function buy() external payable requireAuthorizedCaller {}
+
+    // /**
+    //  *  @dev Credits payouts to insurees
+    //  */
+    // function creditInsurees() external view requireAuthorizedCaller {}
+
+    // /**
+    //  *  @dev Transfers eligible payout funds to insuree
+    //  *
+    //  */
+    // function pay() external view requireAuthorizedCaller {}
 
     function setAirlineAsFunded() external requireAuthorizedCaller {
         require(airlines[tx.origin].funded == false, "Airline already funded");

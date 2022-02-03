@@ -213,4 +213,30 @@ contract('Flight Surety Tests', async (accounts) => {
     assert.equal(throwExp, true, "Airline can't be registered twice");
 
   });
+
+  it('(passengers) purchase flight insurance capped to 1 ether', async () => {
+      const passenger1 = accounts[20];
+
+      await config.flightSuretyApp.registerFlight('AH5821', { from: config.firstAirline});
+
+      assert.equal(
+          await config.flightSuretyData.isFlightRegistered('AH5821'),
+          true,
+          "Flight is not registered"
+      );
+        
+      const passengerBalanceBefore = web3.utils.toBN(await web3.eth.getBalance(passenger1));
+      const tx = await config.flightSuretyApp.buyInsurance('AH5821', { from: passenger1, value: web3.utils.toWei('2.5', 'ether')});
+      const passengerBalanceAfter = web3.utils.toBN(await web3.eth.getBalance(passenger1));
+
+      const txGasCost = web3.utils.toBN(tx.receipt.effectiveGasPrice).muln(tx.receipt.gasUsed);
+      assert.equal(
+          passengerBalanceBefore.sub(passengerBalanceAfter).sub(txGasCost).toString(),
+          web3.utils.toWei('1', 'ether'),
+          "Passenger balance is not correct"
+      );
+
+      const insuranceBalance = await config.flightSuretyData.getInsureeBalance.call('AH5821', passenger1);
+      assert.equal(insuranceBalance, web3.utils.toWei('1', 'ether'), "Insurance balance is not correct");
+  });
 });
