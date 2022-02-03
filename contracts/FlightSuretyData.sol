@@ -30,8 +30,11 @@ contract FlightSuretyData {
         string flightNumber;
         uint256 flightTimestamp;
         mapping(address => uint256) insureeBalances;
+        address[] insurees;
     }
     mapping(string => Flight) private flights;
+
+    mapping(address => uint256) private insureeBalances;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -182,34 +185,73 @@ contract FlightSuretyData {
         return flights[flightNumber].isRegistered;
     }
 
-    function registerFlight(string calldata flightNumber, uint256 flightTimestamp)
-        external
-        requireAuthorizedOrContractOwner
-    {
+    function registerFlight(
+        string calldata flightNumber,
+        uint256 flightTimestamp
+    ) external requireAuthorizedOrContractOwner {
         require(
             !flights[flightNumber].isRegistered,
             "Flight already registered"
         );
-        flights[flightNumber] = Flight({
-            isRegistered: true,
-            statusCode: 0,
-            updatedTimestamp: 0,
-            airline: tx.origin,
-            flightNumber: flightNumber,
-            flightTimestamp: flightTimestamp
-        });
+        Flight memory flight;
+
+        flight.isRegistered = true;
+        flight.statusCode = 0;
+        flight.updatedTimestamp = 0;
+        flight.airline = tx.origin;
+        flight.flightNumber = flightNumber;
+        flight.flightTimestamp = flightTimestamp;
+
+        flights[flightNumber] = flight; 
+    }
+
+    function updateFlight(
+        string calldata flight,
+        uint256 timestamp,
+        uint8 statusCode
+    ) external requireAuthorizedOrContractOwner
+    {
+        require(
+            flights[flight].isRegistered,
+            "Flight not registered"
+        );
+        flights[flight].statusCode = statusCode;
+        flights[flight].updatedTimestamp = timestamp;
+    }
+
+    function creditFlightInsurees(
+        string calldata flight 
+    )
+        external
+        requireAuthorizedOrContractOwner
+    {
+        for (uint256 i = 0; i < flights[flight].insurees.length; i++) {
+            address insuree = flights[flight].insurees[i];
+            if (insuree != address(0)) {
+                insureeBalances[insuree] = flights[flight].insureeBalances[insuree].div(100).mul(150);
+                flights[flight].insureeBalances[insuree] = 0;
+            }
+        }
+    }
+
+    function withdraw()
+        payable
+        external
+        requireAuthorizedOrContractOwner
+    {
+        uint256 balance = insureeBalances[tx.origin];
+        insureeBalances[tx.origin] = 0;
+        address(uint160(tx.origin)).transfer(balance);
     }
 
     function creditInsurance(string calldata flightNumber, uint256 amount)
         external
         requireAuthorizedOrContractOwner
     {
-        require(
-            flights[flightNumber].isRegistered,
-            "Flight not registered"
-        );
+        require(flights[flightNumber].isRegistered, "Flight not registered");
 
         flights[flightNumber].insureeBalances[tx.origin] = amount;
+        flights[flightNumber].insurees.push(tx.origin);
     }
 
     function getInsureeBalance(string calldata flightNumber, address insuree)

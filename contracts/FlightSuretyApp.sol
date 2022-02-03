@@ -30,6 +30,8 @@ contract FlightSuretyApp {
 
     FlightSuretyData private dataContract;
 
+    bool private devMode;
+
     struct Votes {
         uint8 numVotes;
         mapping(address => bool) voters;
@@ -125,6 +127,13 @@ contract FlightSuretyApp {
 
         address payable addr = address(uint160(_dataContractAddress));
         dataContract = FlightSuretyData(addr);
+    }
+
+    function setDevMode(bool _devMode)
+        external
+        requireContractOwner
+    {
+        devMode = _devMode;
     }
 
     /********************************************************************************************/
@@ -247,20 +256,33 @@ contract FlightSuretyApp {
         addr.transfer(insuranceCost);
     }
 
-    function getInsuranceBalance() external {
-
-    }
-
     /**
      * @dev Called after oracle has updated flight status
      *
      */
     function processFlightStatus(
-        address airline,
         string memory flight,
         uint256 timestamp,
         uint8 statusCode
-    ) internal pure {}
+    ) private {
+        require(
+            dataContract.isFlightRegistered(flight),
+            "Flight is not registered"
+        );
+
+        dataContract.updateFlight(flight, timestamp, statusCode);
+
+        if (statusCode == STATUS_CODE_LATE_AIRLINE) {
+            dataContract.creditFlightInsurees(flight);
+        }
+    }
+
+    function withdraw()
+        payable
+        external
+    {
+        dataContract.withdraw();
+    }
 
     // Generate a request for oracles to fetch flight information
     function fetchFlightStatus(
@@ -395,7 +417,7 @@ contract FlightSuretyApp {
             emit FlightStatusInfo(airline, flight, timestamp, statusCode);
 
             // Handle flight status as appropriate
-            processFlightStatus(airline, flight, timestamp, statusCode);
+            processFlightStatus(flight, timestamp, statusCode);
         }
     }
 
@@ -412,7 +434,12 @@ contract FlightSuretyApp {
         internal
         returns (uint8[3] memory)
     {
+        if (devMode) {
+            return [0, 0, 0];
+        }
+
         uint8[3] memory indexes;
+
         indexes[0] = getRandomIndex(account);
 
         indexes[1] = indexes[0];

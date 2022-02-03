@@ -1,13 +1,19 @@
 
 var Test = require('../config/testConfig.js');
-var BigNumber = require('bignumber.js');
 
 contract('Flight Surety Tests', async (accounts) => {
-
+const TEST_ORACLES_COUNT = 1;
+const STATUS_CODE_UNKNOWN = 0;
+const STATUS_CODE_ON_TIME = 10;
+const STATUS_CODE_LATE_AIRLINE = 20;
+const STATUS_CODE_LATE_WEATHER = 30;
+const STATUS_CODE_LATE_TECHNICAL = 40;
+const STATUS_CODE_LATE_OTHER = 50;
   var config;
   before('setup contract', async () => {
     config = await Test.Config(accounts);
     await config.flightSuretyData.authorizeCaller(config.flightSuretyApp.address);
+    await config.flightSuretyApp.setDevMode(true);
   });
 
   /****************************************************************************************/
@@ -239,5 +245,81 @@ contract('Flight Surety Tests', async (accounts) => {
 
       const insuranceBalance = await config.flightSuretyData.getInsureeBalance.call('AH5821', passenger1);
       assert.equal(insuranceBalance, web3.utils.toWei('1', 'ether'), "Insurance balance is not correct");
+  });
+  it("can register oracles", async () => {
+    // ARRANGE
+    let fee = await config.flightSuretyApp.REGISTRATION_FEE.call();
+
+    // ACT
+    for (let a = 30; a < 30 + TEST_ORACLES_COUNT; a++) {
+      await config.flightSuretyApp.registerOracle({
+        from: accounts[a],
+        value: fee,
+      });
+      let result = await config.flightSuretyApp.getMyIndexes.call({
+        from: accounts[a],
+      });
+      console.log(
+        `Oracle Registered: ${result[0]}, ${result[1]}, ${result[2]}`
+      );
+    }
+  });
+
+  it("(passenger) should be credited 1.5x if flight is late because of airline", async () => {
+    // ARRANGE
+    let flight = "ND1309"; // Course number
+    let timestamp = Math.floor(Date.now() / 1000);
+    const passenger1 = accounts[20];
+
+    if (
+      (await config.flightSuretyData.isAirlineFunded(config.firstAirline)) ==
+      false
+    ) {
+      await config.flightSuretyApp.addInitialFunds({
+        from: config.firstAirline,
+        value: web3.utils.toWei("10", "ether"),
+      });
+    }
+
+    const flightTs = new Date("2020-01-01").getTime() / 1000;
+    await config.flightSuretyApp.registerFlight(flight, flightTs, {
+      from: config.firstAirline,
+    });
+
+    assert.equal(
+      await config.flightSuretyData.isFlightRegistered(flight),
+      true,
+      "Flight is not registered"
+  );
+
+    await config.flightSuretyApp.buyInsurance(flight, { from: passenger1, value: web3.utils.toWei('2.5', 'ether')});
+
+    // Submit a request for oracles to get status information for a flight
+    await config.flightSuretyApp.fetchFlightStatus(
+      config.firstAirline,
+      flight,
+      timestamp
+    );
+
+    // ACT
+    await config.flightSuretyApp.submitOracleResponse(
+        0,
+        config.firstAirline,
+        flight,
+        timestamp,
+        STATUS_CODE_LATE_AIRLINE,
+        { from: accounts[30] }
+    );
+
+    const passengerBalanceBefore = web3.utils.toBN(await web3.eth.getBalance(passenger1));
+    const txWithDraw = await debug(config.flightSuretyApp.withdraw({ from: passenger1 }));
+    const passengerBalanceAfter = web3.utils.toBN(await web3.eth.getBalance(passenger1));
+
+    const txGasCost = web3.utils.toBN(txWithDraw.receipt.effectiveGasPrice).muln(txWithDraw.receipt.gasUsed);
+    assert.equal(
+        passengerBalanceBefore.sub(passengerBalanceAfter).sub(txGasCost).toString(),
+        web3.utils.toWei('1.5', 'ether'),
+        "Passenger balance is not correct"
+    );
   });
 });
