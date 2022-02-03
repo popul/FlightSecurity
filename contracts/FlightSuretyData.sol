@@ -263,6 +263,15 @@ contract FlightSuretyData {
         return flights[flightNumber].insureeBalances[insuree];
     }
 
+    function getBalance(address insuree)
+        external
+        view
+        requireContractOwner
+        returns (uint256)
+    {
+        return insureeBalances[insuree];
+    }
+
     // /**
     //  * @dev Buy insurance for a flight
     //  *

@@ -302,22 +302,22 @@ const STATUS_CODE_LATE_OTHER = 50;
     );
 
     // ACT
-    await config.flightSuretyApp.submitOracleResponse(
+    await debug(config.flightSuretyApp.submitOracleResponse(
         0,
         config.firstAirline,
         flight,
         timestamp,
         STATUS_CODE_LATE_AIRLINE,
         { from: accounts[30] }
-    );
+    ));
 
     const passengerBalanceBefore = web3.utils.toBN(await web3.eth.getBalance(passenger1));
-    const txWithDraw = await debug(config.flightSuretyApp.withdraw({ from: passenger1 }));
+    const txWithDraw = await config.flightSuretyApp.withdraw({ from: passenger1 });
     const passengerBalanceAfter = web3.utils.toBN(await web3.eth.getBalance(passenger1));
 
     const txGasCost = web3.utils.toBN(txWithDraw.receipt.effectiveGasPrice).muln(txWithDraw.receipt.gasUsed);
     assert.equal(
-        passengerBalanceBefore.sub(passengerBalanceAfter).sub(txGasCost).toString(),
+        passengerBalanceAfter.sub(passengerBalanceBefore).add(txGasCost).toString(),
         web3.utils.toWei('1.5', 'ether'),
         "Passenger balance is not correct"
     );
