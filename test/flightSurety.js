@@ -169,10 +169,48 @@ contract('Flight Surety Tests', async (accounts) => {
         assert.equal(await config.flightSuretyData.isAirlineFunded.call(newAirline), true, `Airline must be funded`);
         assert.equal(await config.flightSuretyData.getFoundedAirlineCount.call(), i, "Wrong airline founded count");
     }
-
-    const fitfhAirline = accounts[5];
-    await config.flightSuretyApp.registerAirline(fitfhAirline, `Airline 5`, {from: config.firstAirline});
-    const isAirline = await config.flightSuretyData.isAirlineRegistered.call(fitfhAirline)
-    assert.equal(isAirline, false, "fifth airline can't beregistered without multiparty consensus");
   }); 
+
+  it('(airline) next airlines must be accepted by 50% of registered and founded airlines', async() => {
+    const fitfhAirline = accounts[5];
+
+    const r1 = await config.flightSuretyApp.registerAirline(fitfhAirline, `Airline 5`, {from: config.firstAirline});
+    const log1 = r1.logs[0].args;
+    assert.equal(
+        log1.success, false, 
+        "fifth airline can't be registered without multiparty consensus"
+    );
+    assert.equal(
+        log1.numVotes, 1, 
+        "wrong number of votes"
+    );
+
+    const secondAirline = accounts[2];
+
+    const r2 = await config.flightSuretyApp.registerAirline(fitfhAirline, `Airline 5`, {from: secondAirline});
+    const log2 = r2.logs[0].args;
+    assert.equal(
+        log2.success, true,
+        "fifth airline must be registered because 50% of airlines have registered it"
+    );
+    assert.equal(
+        log2.numVotes, 2,
+        "wrong number of votes"
+    );
+  });
+
+  it('(airline) can\'t register twice an airline', async() => {
+    const fitfhAirline = accounts[5];
+
+    let throwExp = false;
+    try {
+        await config.flightSuretyApp.registerAirline(fitfhAirline, `Airline 5`, {from: config.firstAirline});
+    }
+    catch {
+        throwExp = true;
+    }
+
+    assert.equal(throwExp, true, "Airline can't be registered twice");
+
+  });
 });

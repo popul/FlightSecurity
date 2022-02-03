@@ -38,6 +38,12 @@ contract FlightSuretyApp {
     }
     mapping(bytes32 => Flight) private flights;
 
+    struct Votes {
+        uint8 numVotes;
+        mapping (address => bool) voters;
+    }
+
+    mapping(address => Votes) private airlinesVotes;
  
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -136,6 +142,8 @@ contract FlightSuretyApp {
     {
     }
   
+    event VoteEmitted (address voter, address airline, bool success, uint256 numVotes);
+
    /**
     * @dev Add an airline to the registration queue
     *
@@ -149,15 +157,34 @@ contract FlightSuretyApp {
                             requireDataContract
                             requireAirlineRegistered
                             requireAirlineFunded
-                            returns(bool success, uint256 votes)
+                            returns(bool success, uint256 numVotes)
     {
+        require(dataContract.isAirlineRegistered(_airline) == false, "Airline is already registered");
+
         if (dataContract.getAirlineCount() < 4) {
             dataContract.registerAirline(_airline, _airlineName);
-            return (true, 0);
+            emit VoteEmitted(msg.sender, _airline, true, 1);
+            return (true, 1);
         } else {
-            return (false, 0);
+            Votes storage votes = airlinesVotes[_airline];
+            require(votes.voters[msg.sender] == false, "Airline has already voted for this airline");
+
+            votes.voters[msg.sender] = true;
+            votes.numVotes = votes.numVotes + 1;
+
+            uint256 neededVotes = dataContract.getFoundedAirlineCount() / 2;
+
+            if (votes.numVotes >= neededVotes) {
+                dataContract.registerAirline(_airline, _airlineName);
+                uint256 returnNumVotes = votes.numVotes;
+                delete airlinesVotes[_airline];
+                emit VoteEmitted(msg.sender, _airline, true, returnNumVotes);
+                return (true, returnNumVotes);
+            } else {
+                emit VoteEmitted(msg.sender, _airline, false, votes.numVotes);
+                return (false, votes.numVotes);
+            }
         }
-        return (success, 0);
     }
 
     function addInitialFunds() payable external requireAirlineRegistered requireDataContract giveBackChange(10 ether)
