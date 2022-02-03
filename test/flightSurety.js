@@ -217,7 +217,8 @@ contract('Flight Surety Tests', async (accounts) => {
   it('(passengers) purchase flight insurance capped to 1 ether', async () => {
       const passenger1 = accounts[20];
 
-      await config.flightSuretyApp.registerFlight('AH5821', { from: config.firstAirline});
+      const flightTs = new Date('2020-01-01').getTime() / 1000;
+      await config.flightSuretyApp.registerFlight('AH5821', flightTs, { from: config.firstAirline });
 
       assert.equal(
           await config.flightSuretyData.isFlightRegistered('AH5821'),

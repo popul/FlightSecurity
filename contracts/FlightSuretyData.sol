@@ -28,6 +28,7 @@ contract FlightSuretyData {
         uint256 updatedTimestamp;
         address airline;
         string flightNumber;
+        uint256 flightTimestamp;
         mapping(address => uint256) insureeBalances;
     }
     mapping(string => Flight) private flights;
@@ -181,7 +182,7 @@ contract FlightSuretyData {
         return flights[flightNumber].isRegistered;
     }
 
-    function registerFlight(string calldata flightNumber)
+    function registerFlight(string calldata flightNumber, uint256 flightTimestamp)
         external
         requireAuthorizedOrContractOwner
     {
@@ -194,7 +195,8 @@ contract FlightSuretyData {
             statusCode: 0,
             updatedTimestamp: 0,
             airline: tx.origin,
-            flightNumber: flightNumber
+            flightNumber: flightNumber,
+            flightTimestamp: flightTimestamp
         });
     }
 

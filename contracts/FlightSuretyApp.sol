@@ -208,7 +208,7 @@ contract FlightSuretyApp {
      * @dev Register a future flight for insuring.
      *
      */
-    function registerFlight(string calldata flightNumber)
+    function registerFlight(string calldata flightNumber, uint256 flightTimestamp)
         external
         requireDataContract
         requireAirlineFunded
@@ -218,7 +218,7 @@ contract FlightSuretyApp {
             "Flight is already registered"
         );
 
-        dataContract.registerFlight(flightNumber);
+        dataContract.registerFlight(flightNumber, flightTimestamp);
     }
 
     function buyInsurance(string calldata flightNumber)
