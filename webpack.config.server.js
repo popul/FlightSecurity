@@ -5,11 +5,13 @@ const StartServerPlugin = require('start-server-webpack-plugin')
 
 module.exports = {
     entry: [
+        'babel-polyfill',
         'webpack/hot/poll?1000',
         './src/server/index'
     ],
     watch: true,
     target: 'node',
+    devtool: 'eval-source-map',
     externals: [nodeExternals({
         whitelist: ['webpack/hot/poll?1000']
     })],
@@ -21,7 +23,10 @@ module.exports = {
         }]
     },
     plugins: [
-        new StartServerPlugin('server.js'),
+        new StartServerPlugin({
+            name: 'server.js',
+            nodeArgs: ['--inspect']
+        }),
         new webpack.NamedModulesPlugin(),
         new webpack.HotModuleReplacementPlugin(),
         new webpack.NoEmitOnErrorsPlugin(),
