@@ -158,6 +158,7 @@ contract FlightSuretyApp {
         requireDataContract
         requireAirlineRegistered
         requireAirlineFunded
+        requireIsOperational
         returns (bool success, uint256 numVotes)
     {
         require(
@@ -200,6 +201,7 @@ contract FlightSuretyApp {
         requireAirlineRegistered
         requireDataContract
         giveBackChange(10 ether)
+        requireIsOperational
     {
         require(msg.value >= 10 ether, "10 ethers are required");
         require(
@@ -221,6 +223,7 @@ contract FlightSuretyApp {
         external
         requireDataContract
         requireAirlineFunded
+        requireIsOperational
     {
         require(
             dataContract.isFlightRegistered(flightNumber) == false,
@@ -234,6 +237,7 @@ contract FlightSuretyApp {
         external
         payable
         giveBackChange(1 ether)
+        requireIsOperational
     {
         require(
             dataContract.isFlightRegistered(flightNumber),
@@ -280,6 +284,7 @@ contract FlightSuretyApp {
     function withdraw()
         payable
         external
+        requireIsOperational
     {
         dataContract.withdraw();
     }
@@ -287,6 +292,7 @@ contract FlightSuretyApp {
     function getBalance()
         external
         view
+        requireIsOperational
         returns (uint256)
     {
         return dataContract.getBalance(msg.sender);
@@ -297,7 +303,10 @@ contract FlightSuretyApp {
         address airline,
         string calldata flight,
         uint256 timestamp
-    ) external {
+    ) 
+        external
+        requireIsOperational
+     {
         uint8 index = devMode == true ? 0 : getRandomIndex(msg.sender);
 
         // Generate a unique key for storing the request
@@ -370,7 +379,11 @@ contract FlightSuretyApp {
     );
 
     // Register an oracle with the contract
-    function registerOracle() external payable {
+    function registerOracle()
+        external
+        payable
+        requireIsOperational
+      {
         // Require registration fee
         require(msg.value >= REGISTRATION_FEE, "Registration fee is required");
 
@@ -379,7 +392,11 @@ contract FlightSuretyApp {
         oracles[msg.sender] = Oracle({isRegistered: true, indexes: indexes});
     }
 
-    function getMyIndexes() external view returns (uint8[3] memory) {
+    function getMyIndexes()
+        external
+        view
+        requireIsOperational
+        returns (uint8[3] memory) {
         require(
             oracles[msg.sender].isRegistered,
             "Not registered as an oracle"
@@ -398,7 +415,10 @@ contract FlightSuretyApp {
         string calldata flight,
         uint256 timestamp,
         uint8 statusCode
-    ) external {
+    ) 
+        external
+        requireIsOperational
+    {
         require(
             (oracles[msg.sender].indexes[0] == index) ||
                 (oracles[msg.sender].indexes[1] == index) ||
