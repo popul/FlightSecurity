@@ -203,7 +203,7 @@ contract FlightSuretyApp {
     {
         require(msg.value >= 10 ether, "10 ethers are required");
         require(
-            !dataContract.isAirlineFunded(msg.sender),
+            dataContract.isAirlineFunded(msg.sender) == false,
             "Airline is already funded"
         );
 
@@ -284,13 +284,21 @@ contract FlightSuretyApp {
         dataContract.withdraw();
     }
 
+    function getBalance()
+        external
+        view
+        returns (uint256)
+    {
+        return dataContract.getBalance(msg.sender);
+    }
+
     // Generate a request for oracles to fetch flight information
     function fetchFlightStatus(
         address airline,
         string calldata flight,
         uint256 timestamp
     ) external {
-        uint8 index = getRandomIndex(msg.sender);
+        uint8 index = devMode == true ? 0 : getRandomIndex(msg.sender);
 
         // Generate a unique key for storing the request
         bytes32 key = keccak256(
@@ -434,7 +442,7 @@ contract FlightSuretyApp {
         internal
         returns (uint8[3] memory)
     {
-        if (devMode) {
+        if (devMode == true) {
             return [0, 0, 0];
         }
 

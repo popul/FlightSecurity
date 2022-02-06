@@ -39,6 +39,7 @@ module.exports = {
   resolve: {
     extensions: [".js"]
   },
+  devtool: 'eval-source-map',
   devServer: {
     contentBase: path.join(__dirname, "dapp"),
     port: 8000,

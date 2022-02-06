@@ -190,19 +190,14 @@ contract FlightSuretyData {
         uint256 flightTimestamp
     ) external requireAuthorizedOrContractOwner {
         require(
-            !flights[flightNumber].isRegistered,
+            flights[flightNumber].isRegistered == false,
             "Flight already registered"
         );
-        Flight memory flight;
 
-        flight.isRegistered = true;
-        flight.statusCode = 0;
-        flight.updatedTimestamp = 0;
-        flight.airline = tx.origin;
-        flight.flightNumber = flightNumber;
-        flight.flightTimestamp = flightTimestamp;
-
-        flights[flightNumber] = flight; 
+        flights[flightNumber].isRegistered = true;
+        flights[flightNumber].flightNumber = flightNumber;
+        flights[flightNumber].airline = tx.origin;
+        flights[flightNumber].flightTimestamp = flightTimestamp;
     }
 
     function updateFlight(
@@ -228,7 +223,7 @@ contract FlightSuretyData {
         for (uint256 i = 0; i < flights[flight].insurees.length; i++) {
             address insuree = flights[flight].insurees[i];
             if (insuree != address(0)) {
-                insureeBalances[insuree] = flights[flight].insureeBalances[insuree].div(100).mul(150);
+                insureeBalances[insuree] += flights[flight].insureeBalances[insuree].div(100).mul(150);
                 flights[flight].insureeBalances[insuree] = 0;
             }
         }
@@ -266,7 +261,7 @@ contract FlightSuretyData {
     function getBalance(address insuree)
         external
         view
-        requireContractOwner
+        requireAuthorizedOrContractOwner
         returns (uint256)
     {
         return insureeBalances[insuree];

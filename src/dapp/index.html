@@ -13,8 +13,8 @@
 
     <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
         <a class="navbar-brand" href="#">FlightSurety</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault"
-            aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault"
+            aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
     </nav>
@@ -24,7 +24,23 @@
         <div id="display-wrapper" class="top-20">
         </div>
         <div class="row top-20">
-            <label class="form">Flight</label> <input type="text" id="flight-number"> <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
+            <button class="btn btn-primary" id="withdraw">Withdraw</button>
+        </div>
+        <div class="row top-20">
+            <button class="btn btn-primary" id="refresh-balance">Refresh </button>
+            <span class="ml-3">
+                <span class="mr-1">Insuree balance:</span><span id="insuree-balance">0</span>
+            </span>
+        </div>
+        <div class="row top-20">
+            <button class="btn btn-primary" id="refresh-ethereum-balance">Refresh</button>
+            <span class="ml-3">
+                <span class="mr-1">Ethereum Insuree balance:</span><span id="ethereum-insuree-balance">0</span>
+            </span>
+        </div>
+        <div class="row top-20">
+            <label class="form">Flight</label> <input type="text" id="flight-number">
+            <btn class="btn btn-primary" id="submit-oracle">Register Flight and submit to Oracles</btn>
         </div>
     </main>
 

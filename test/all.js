@@ -302,14 +302,14 @@ const STATUS_CODE_LATE_OTHER = 50;
     );
 
     // ACT
-    await debug(config.flightSuretyApp.submitOracleResponse(
+    await config.flightSuretyApp.submitOracleResponse(
         0,
         config.firstAirline,
         flight,
         timestamp,
         STATUS_CODE_LATE_AIRLINE,
         { from: accounts[30] }
-    ));
+    );
 
     const passengerBalanceBefore = web3.utils.toBN(await web3.eth.getBalance(passenger1));
     const txWithDraw = await config.flightSuretyApp.withdraw({ from: passenger1 });

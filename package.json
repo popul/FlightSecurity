@@ -37,10 +37,12 @@
     "superstatic": "6.0.3",
     "truffle": "^5.4.13",
     "truffle-hdwallet-provider": "1.0.2",
-    "web3": "^1.2.0",
     "webpack": "^4.6.0",
     "webpack-cli": "3.1.2",
     "webpack-dev-server": "3.1.14",
     "webpack-node-externals": "1.7.2"
+  },
+  "dependencies": {
+    "web3": "^1.7.0"
   }
 }
